@@ -11,6 +11,7 @@ start_service() {
 	config_load "$NAME"
 
 	local enabled user group conffile workdir ifaces
+	local log_stdout log_stderr
 	config_get_bool enabled "main" "enabled" "0"
 	[ "$enabled" -eq "1" ] || return 0
 
@@ -18,6 +19,8 @@ start_service() {
 	config_get conffile "main" "conffile"
 	config_get ifaces "main" "ifaces"
 	config_get workdir "main" "workdir" "/usr/share/sing-box"
+	config_get_bool log_stdout "main" "log_stdout" "0"
+	config_get_bool log_stderr "main" "log_stderr" "1"
 
 	mkdir -p "$workdir"
 	local group="$(id -ng $user)"
@@ -30,8 +33,10 @@ start_service() {
 	procd_set_param user "$user"
 	procd_set_param file "$conffile"
 	[ -z "$ifaces" ] || procd_set_param netdev $ifaces
-	procd_set_param stdout 1
-	procd_set_param stderr 1
+	procd_set_param stdout "$log_stdout"
+	procd_set_param stderr "$log_stderr"
+	procd_set_param limits core="unlimited"
+	procd_set_param limits nofile="1000000 1000000"
 	procd_set_param respawn
 
 	procd_close_instance
